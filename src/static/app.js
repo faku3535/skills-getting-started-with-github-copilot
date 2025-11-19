@@ -24,7 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
         let participantsHTML = "<ul class='participants-list'>";
         if (details.participants.length > 0) {
           details.participants.forEach(email => {
-            participantsHTML += `<li>${email}</li>`;
+            participantsHTML += `
+              <li class="participant-item">
+                <span class="participant-email">${email}</span>
+                <span class="delete-participant" title="Remove participant" data-activity="${name}" data-email="${email}">✖</span>
+              </li>
+            `;
           });
         } else {
           participantsHTML += `<li class='no-participants'>No participants yet</li>`;
@@ -49,6 +54,29 @@ document.addEventListener("DOMContentLoaded", () => {
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
+      });
+
+      // Add event listeners for delete icons
+      document.querySelectorAll('.delete-participant').forEach(icon => {
+        icon.addEventListener('click', async (e) => {
+          const activity = e.target.getAttribute('data-activity');
+          const email = e.target.getAttribute('data-email');
+          if (!activity || !email) return;
+          if (!confirm(`Remove ${email} from ${activity}?`)) return;
+          try {
+            const response = await fetch(`/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`, {
+              method: 'POST',
+            });
+            const result = await response.json();
+            if (response.ok) {
+              fetchActivities(); // Refresh list
+            } else {
+              alert(result.detail || 'Failed to remove participant.');
+            }
+          } catch (error) {
+            alert('Error removing participant.');
+          }
+        });
       });
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
